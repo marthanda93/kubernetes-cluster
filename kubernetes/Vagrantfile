@@ -21,11 +21,11 @@ MSG
 ENV["LC_ALL"] = "en_US.UTF-8"
 
 Vagrant.configure(API_VERSION) do |config|
-  config.vm.define "k8s-master" do |subconfig|
+  config.vm.define "master-node" do |subconfig|
     subconfig.vm.post_up_message = $msg
     subconfig.vm.box = IMAGE
 
-    subconfig.vm.hostname = "k8s-master"
+    subconfig.vm.hostname = "master-node"
 
     subconfig.vm.network :private_network, ip: "#{IP_PART}.10"
     subconfig.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
@@ -33,13 +33,13 @@ Vagrant.configure(API_VERSION) do |config|
     # Hostfile :: Master node
     subconfig.vm.provision :shell do |s|
       s.inline = 'echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts'
-      s.args = "#{IP_PART}.10 k8s-master"
+      s.args = "#{IP_PART}.10 master-node"
     end
     # Hostfile :: Worker node
     (1..NODE_COUNT).each do |j|
       subconfig.vm.provision :shell do |s|
         s.inline = 'echo -e "$1\t$2" | tee -a /etc/hosts'
-        s.args = "#{IP_PART}.#{10 + j} node#{j}"
+        s.args = "#{IP_PART}.#{10 + j} worker-node-#{j}"
       end
     end
 
@@ -48,39 +48,39 @@ Vagrant.configure(API_VERSION) do |config|
       vb.cpus = 2
     end
 
-    subconfig.vm.provision :shell, path: "bootstrap_master.sh"
-
     subconfig.vm.provision :shell do |shell|
       shell.privileged = true
       shell.inline = 'echo rebooting'
       shell.reboot = true
     end
+    
+    subconfig.vm.provision :shell, path: "script/bootstrap_master.sh"
   end
   
   (1..NODE_COUNT).each do |i|
-    config.vm.define "node#{i}" do |subconfig|
+    config.vm.define "worker-node-#{i}" do |subconfig|
       subconfig.vm.box = IMAGE
 
-      subconfig.vm.hostname = "node#{i}"
+      subconfig.vm.hostname = "worker-node-1#{i}"
 
       subconfig.vm.network :private_network, ip: "#{IP_PART}.#{i + 10}"
 
       # Hostfile :: Master node
       subconfig.vm.provision :shell do |s|
         s.inline = 'echo -e "$1\t$2" | tee -a /etc/hosts'
-        s.args = "#{IP_PART}.10 k8s-master"
+        s.args = "#{IP_PART}.10 master-node"
       end
       # Hostfile :: Worker node
       (1..NODE_COUNT).each do |j|
         if i != j
           subconfig.vm.provision :shell do |s|
             s.inline = 'echo -e "$1\t$2" | tee -a /etc/hosts'
-            s.args = "#{IP_PART}.#{10 + j} node#{j}"
+            s.args = "#{IP_PART}.#{10 + j} worker-node-#{j}"
           end
         else
           subconfig.vm.provision :shell do |s|
             s.inline = 'echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts'
-            s.args = "#{IP_PART}.#{10 + j} node#{j}"
+            s.args = "#{IP_PART}.#{10 + j} worker-node-#{j}"
           end
         end
       end
@@ -90,14 +90,16 @@ Vagrant.configure(API_VERSION) do |config|
         vb.cpus = 2
       end
 
-      subconfig.vm.provision :shell, path: "bootstrap_node.sh"
-
       subconfig.vm.provision :shell do |shell|
         shell.privileged = true
         shell.inline = 'echo rebooting'
         shell.reboot = true
       end
+
+      subconfig.vm.provision :shell, path: "script/bootstrap_node.sh"
     end
   end
+
+  config.vm.provision :shell, path: "script/bootstrap.sh"
 
 end
