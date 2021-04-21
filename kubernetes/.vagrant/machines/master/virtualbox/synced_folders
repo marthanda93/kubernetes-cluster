@@ -1,1 +1,0 @@
-{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"/Users/marthanda/Desktop/Marthanda/Vagrant/vagrant-kubernetes/kubernetes","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}
