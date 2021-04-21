@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 
-apt-get update
+sed -i 's/enforcing/disabled/g' /etc/selinux/config /etc/selinux/config
+yum update -y
+yum install -y git wget telnet vim net-tools zip unzip wget curl -y
 
-apt-get install -y nmon
-
-if ! [ -L /var/www ]; then
-
-rm -rf /var/www
-
-ln -fs /vagrant /var/www
-
-fi
+yum clean all

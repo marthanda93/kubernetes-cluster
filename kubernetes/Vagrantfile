@@ -1,12 +1,10 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Vagrant.require_version ">= 2"
-# vagrant_api_version = "2"
-
-# Every Vagrant development environment requires a box. You can search for
-# boxes at https://atlas.hashicorp.com/search.
-BOX_IMAGE = "bento/ubuntu-18.04"
+API_VERSION = "2"
+IMAGE = "centos/8"
+DOMAIN = "k8.io"
+IP_PART = "192.168.55"
 NODE_COUNT = 2
 
 $msg = <<MSG
@@ -20,27 +18,85 @@ URLS:
 ------------------------------------------------------
 MSG
 
-Vagrant.configure("2") do |config|
-  config.vm.define "master" do |subconfig|
+ENV["LC_ALL"] = "en_US.UTF-8"
+
+Vagrant.configure(API_VERSION) do |config|
+  config.vm.define "k8s-master" do |subconfig|
     subconfig.vm.post_up_message = $msg
-    subconfig.vm.box = BOX_IMAGE
-    subconfig.vm.hostname = "master"
-    subconfig.vm.network :private_network, ip: "10.0.0.10"
-    config.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
-    subconfig.vm.provision :shell, path: "bootstrap_master.sh"
+    subconfig.vm.box = IMAGE
+
+    subconfig.vm.hostname = "k8s-master"
+
+    subconfig.vm.network :private_network, ip: "#{IP_PART}.10"
+    subconfig.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
+    
+    # Hostfile :: Master node
+    subconfig.vm.provision :shell do |s|
+      s.inline = 'echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts'
+      s.args = "#{IP_PART}.10 k8s-master"
+    end
+    # Hostfile :: Worker node
+    (1..NODE_COUNT).each do |j|
+      subconfig.vm.provision :shell do |s|
+        s.inline = 'echo -e "$1\t$2" | tee -a /etc/hosts'
+        s.args = "#{IP_PART}.#{10 + j} node#{j}"
+      end
+    end
 
     subconfig.vm.provider "virtualbox" do |vb|
-      vb.memory = "1024"
-      vb.cpus = 1
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+
+    subconfig.vm.provision :shell, path: "bootstrap_master.sh"
+
+    subconfig.vm.provision :shell do |shell|
+      shell.privileged = true
+      shell.inline = 'echo rebooting'
+      shell.reboot = true
     end
   end
   
   (1..NODE_COUNT).each do |i|
     config.vm.define "node#{i}" do |subconfig|
-      subconfig.vm.box = BOX_IMAGE
+      subconfig.vm.box = IMAGE
+
       subconfig.vm.hostname = "node#{i}"
-      subconfig.vm.network :private_network, ip: "192.168.55.#{i + 10}"
+
+      subconfig.vm.network :private_network, ip: "#{IP_PART}.#{i + 10}"
+
+      # Hostfile :: Master node
+      subconfig.vm.provision :shell do |s|
+        s.inline = 'echo -e "$1\t$2" | tee -a /etc/hosts'
+        s.args = "#{IP_PART}.10 k8s-master"
+      end
+      # Hostfile :: Worker node
+      (1..NODE_COUNT).each do |j|
+        if i != j
+          subconfig.vm.provision :shell do |s|
+            s.inline = 'echo -e "$1\t$2" | tee -a /etc/hosts'
+            s.args = "#{IP_PART}.#{10 + j} node#{j}"
+          end
+        else
+          subconfig.vm.provision :shell do |s|
+            s.inline = 'echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts'
+            s.args = "#{IP_PART}.#{10 + j} node#{j}"
+          end
+        end
+      end
+
+      subconfig.vm.provider "virtualbox" do |vb|
+        vb.memory = "2048"
+        vb.cpus = 2
+      end
+
       subconfig.vm.provision :shell, path: "bootstrap_node.sh"
+
+      subconfig.vm.provision :shell do |shell|
+        shell.privileged = true
+        shell.inline = 'echo rebooting'
+        shell.reboot = true
+      end
     end
   end
 

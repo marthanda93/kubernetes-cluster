@@ -2,4 +2,4 @@
 Vagrant for kubernetes
 
 # Setup
-vagrant plugin install vagrant-vbguest
+vagrant plugin install vagrant-hostsupdater   https://github.com/agiledivider/vagrant-hostsupdater
