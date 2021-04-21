@@ -1,2 +1,8 @@
-kubernetes/.vagrant
-.DS_Store
+.vagrant/
+.DS_Store/
+.idea/
+.DS_Store/
+kubernetes/.vagrant/
+kubernetes/.DS_Store
+kubernetes/.idea/
+kubernetes/.DS_Store/
