@@ -1,2 +1,2 @@
-# vagrant-kubernetes
-Vagrant for kubernetes
+# VAAS
+Vagrant As Automation Script
