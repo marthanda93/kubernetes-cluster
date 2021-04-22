@@ -40,29 +40,20 @@ Vagrant.configure(API_VERSION) do |config|
       mhf.args = ["#{IP_PART}.10", "master-node"]
     end
     # Hostfile :: Worker node
-    (1..NODE_COUNT).each do |j|
-      subconfig.vm.provision "worker-hostfile", type: "shell" do |whf|
-        whf.inline = <<-SHELL
-          echo "----------------------------------|| Update Worker node hostfile for worker"
-          echo -e "$1\t$2" | tee -a /etc/hosts
-        SHELL
-        whf.args = ["#{IP_PART}.#{10 + j}", "worker-node-#{j}"]
-      end
+    subconfig.vm.provision "Update hostfile and authorized_keys", type: "shell" do |whu|
+      whu.inline = <<-SHELL
+        echo "----------------------------------|| Update Worker node hostfile for worker"
+        for i in $(eval echo {1..$2}); do 
+          echo -e "${3}.$((10 + $i))\tworker-node-${i}" | tee -a /etc/hosts
+          cat /home/${1}/.ssh/id_rsa.pub | sed "s/${1}@master-node/${1}@worker-node-${i}/g" >> /home/${1}/.ssh/authorized_keys
+        done
+      SHELL
+      whu.args   = ["#{USER}", "#{NODE_COUNT}", "#{IP_PART}"]
     end
 
     subconfig.vm.provider "virtualbox" do |vb|
       vb.memory = "2048"
       vb.cpus = 2
-    end
-
-    subconfig.vm.provision "authorized_keys update", type: "shell" do |auth_update|
-      auth_update.inline = <<-SHELL
-        echo "----------------------------------|| Update authorized_keys file"
-        for i in $(eval echo {1..$2}); do 
-          cat /home/${1}/.ssh/id_rsa.pub | sed "s/${1}@master-node/${1}@worker-node-${i}/g" >> /home/${1}/.ssh/authorized_keys
-        done
-      SHELL
-      auth_update.args   = ["#{USER}", "#{NODE_COUNT}"]
     end
 
     subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
@@ -148,16 +139,10 @@ Vagrant.configure(API_VERSION) do |config|
           kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
           echo "sudo $kube_join" | su - ${1}
 
-          echo "scp -o StrictHostKeyChecking=no ${1}@${2}:/etc/kubernetes/admin.conf $HOME/" | su - ${1}
-          echo "sudo mv $HOME/admin.conf /etc/kubernetes/" | su - ${1}
-          echo "chown ${1} /etc/kubernetes/admin.conf" | su - ${1}
-
-          su ${1} -c 'mkdir -p $HOME/.kube'
-          su ${1} -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config'
-          su ${1} -c 'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
-          su ${1} -c 'echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> $HOME/.bash_profile'
-
-          echo "export KUBEADM_JOIN=\"${join_command}\"" >> /home/${1}/.bash_profile
+          echo "scp -o StrictHostKeyChecking=no ${1}@${2}:/etc/kubernetes/admin.conf /home/${1}/" | su - ${1}
+          echo "mkdir -p /home/${1}/.kube" | su - ${1}
+          echo "cp -i /home/${1}/admin.conf /home/${1}/.kube/config" | su - ${1}
+          echo "sudo chown ${1}:${1} -R /home/${1}/.kube" | su - ${1}
         SHELL
         supdate.args = ["#{USER}", "master-node"]
       end
