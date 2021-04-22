@@ -32,7 +32,7 @@ EOF
 systemctl enable --now docker
 systemctl enable --now kubelet
 systemctl enable --now firewalld
-usermod -aG docker $USER
+usermod -aG docker $1
 yum clean all
 
 # Enable transparent masquerading and facilitate Virtual Extensible LAN (VxLAN) traffic for communication between Kubernetes pods across the cluster.
@@ -56,3 +56,5 @@ sysctl --system
 # Disable all memory swaps to increase performance.
 sed -i '/swap/d' /etc/fstab
 swapoff -a
+
+# ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa <<<y

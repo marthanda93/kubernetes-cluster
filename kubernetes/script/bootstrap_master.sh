@@ -5,14 +5,16 @@ firewall-cmd --permanent --add-port=2379-2380/tcp
 firewall-cmd --permanent --add-port=10250/tcp
 firewall-cmd --permanent --add-port=10251/tcp
 firewall-cmd --permanent --add-port=10252/tcp
-firewall-cmd --permanent --add-port=10255/tcp
+firewall-cmd --permanent --add-port=8080/tcp
 firewall-cmd --reload
 
-join_command=$(kubeadm init --pod-network-cidr=192.168.55.0/24 --apiserver-advertise-address=192.168.55.10 | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd '')
-echo $join_command
+join_command=$(kubeadm init --pod-network-cidr=${2}.0/16 --apiserver-advertise-address=${2}.${3} | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd '')
 
-su vagrant -c 'mkdir -p $HOME/.kube'
-su vagrant -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config'
-su vagrant -c 'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
-su vagrant -c 'echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> $HOME/.bash_profile'
-chown vagrant /etc/kubernetes/admin.conf
+su ${1} -c 'mkdir -p $HOME/.kube'
+su ${1} -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config'
+su ${1} -c 'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
+su ${1} -c 'echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> $HOME/.bash_profile'
+chown ${1} /etc/kubernetes/admin.conf
+echo "export KUBEADM_JOIN=\"${join_command}\"" >> /home/${1}/.bash_profile
+
+su ${1} -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
