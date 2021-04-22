@@ -43,7 +43,7 @@ Vagrant.configure(API_VERSION) do |config|
     (1..NODE_COUNT).each do |j|
       subconfig.vm.provision "worker-hostfile", type: "shell" do |whf|
         whf.inline = <<-SHELL
-        echo "----------------------------------|| Update Worker node hostfile for worker"
+          echo "----------------------------------|| Update Worker node hostfile for worker"
           echo -e "$1\t$2" | tee -a /etc/hosts
         SHELL
         whf.args = ["#{IP_PART}.#{10 + j}", "worker-node-#{j}"]
@@ -147,6 +147,17 @@ Vagrant.configure(API_VERSION) do |config|
           kube_join=\$(echo "ssh ${1}@${2} -o StrictHostKeyChecking=no '( cat /home/${1}/.bash_profile | grep KUBEADM_JOIN)'" | su - ${1})
           kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
           echo "sudo $kube_join" | su - ${1}
+
+          echo "scp -o StrictHostKeyChecking=no ${1}@${2}:/etc/kubernetes/admin.conf $HOME/" | su - ${1}
+          echo "sudo mv $HOME/admin.conf /etc/kubernetes/" | su - ${1}
+          echo "chown ${1} /etc/kubernetes/admin.conf" | su - ${1}
+
+          su ${1} -c 'mkdir -p $HOME/.kube'
+          su ${1} -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config'
+          su ${1} -c 'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
+          su ${1} -c 'echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> $HOME/.bash_profile'
+
+          echo "export KUBEADM_JOIN=\"${join_command}\"" >> /home/${1}/.bash_profile
         SHELL
         supdate.args = ["#{USER}", "master-node"]
       end
