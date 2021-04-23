@@ -34,6 +34,7 @@ Vagrant.configure(API_VERSION) do |config|
     # Hostfile :: Master node
     subconfig.vm.provision "master-hostfile", type: "shell" do |mhf|
       mhf.inline = <<-SHELL
+        echo "----------------------------------|| Update Master node hostfile for master"
         echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts
       SHELL
       mhf.args = ["#{IP_PART}.10", "master-node"]
@@ -41,8 +42,10 @@ Vagrant.configure(API_VERSION) do |config|
     # Hostfile :: Worker node
     subconfig.vm.provision "Update hostfile and authorized_keys", type: "shell" do |whu|
       whu.inline = <<-SHELL
+        echo "----------------------------------|| Update Worker node hostfile for worker"
         for i in $(eval echo {1..$2}); do 
           echo -e "${3}.$((10 + $i))\tworker-node-${i}" | tee -a /etc/hosts
+          cat /home/${1}/.ssh/id_rsa.pub | sed "s/${1}@master-node/${1}@worker-node-${i}/g" >> /home/${1}/.ssh/authorized_keys
         done
       SHELL
       whu.args   = ["#{USER}", "#{NODE_COUNT}", "#{IP_PART}"]
@@ -78,10 +81,8 @@ Vagrant.configure(API_VERSION) do |config|
       # Hostfile :: Master node
       subconfig.vm.provision "master-hostfile", type: "shell" do |s|
         s.inline = <<-SHELL
+          echo "----------------------------------|| Update Master node hostfile for master"
           echo -e "$1\t$2" | tee -a /etc/hosts
-          firewall-cmd --permanent --add-port=10250/tcp
-          firewall-cmd --permanent --add-port=30000-32767/tcp
-          firewall-cmd --reload
         SHELL
         s.args = ["#{IP_PART}.10", "master-node"]
       end
@@ -90,6 +91,7 @@ Vagrant.configure(API_VERSION) do |config|
         if i != j
           subconfig.vm.provision "other-worker-hostfile", type: "shell" do |supdate|
             supdate.inline = <<-SHELL
+              echo "----------------------------------|| Update Other worker node hostfile update"
               echo -e "$1\t$2" | tee -a /etc/hosts
             SHELL
             supdate.args = ["#{IP_PART}.#{10 + j}", "worker-node-#{j}", "#{USER}", "#{i}"]
@@ -97,6 +99,7 @@ Vagrant.configure(API_VERSION) do |config|
         else
           subconfig.vm.provision "self-worker-hostfile", type: "shell" do |supdate|
             supdate.inline = <<-SHELL
+              echo "----------------------------------|| Self Other worker node hostfile update"
               echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts
             SHELL
             supdate.args = ["#{IP_PART}.#{10 + j}", "worker-node-#{j}", "#{USER}", "#{i}"]
@@ -109,22 +112,13 @@ Vagrant.configure(API_VERSION) do |config|
         vb.cpus = 2
       end
 
-      subconfig.trigger.after :up do |trigger_local|
-        trigger_local.run = {inline: "/bin/bash -c 'wpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{USER}/.ssh/id_rsa.pub\" worker-node-#{i}) && vagrant ssh --no-tty -c \"echo \${wpub_key} >> /home/#{USER}/.ssh/authorized_keys\" master-node; mpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{USER}/.ssh/id_rsa.pub\" master-node) && vagrant ssh --no-tty -c \"echo \${mpub_key} >> /home/#{USER}/.ssh/authorized_keys\" worker-node-#{i}'"}
-      end
-
-      subconfig.trigger.after :up do |trigger_remote|
-        trigger_remote.run_remote = {inline: <<-SHELL
-              kube_join=\$(echo "ssh #{USER}@master-node -o StrictHostKeyChecking=no '( cat /home/#{USER}/.bash_profile | grep KUBEADM_JOIN)'" | su - #{USER})
-              kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
-              echo "sudo $kube_join" | su - #{USER}
-
-              echo "scp -o StrictHostKeyChecking=no #{USER}@master-node:/etc/kubernetes/admin.conf /home/#{USER}/" | su - #{USER}
-              echo "mkdir -p /home/#{USER}/.kube" | su - #{USER}
-              echo "cp -i /home/#{USER}/admin.conf /home/#{USER}/.kube/config" | su - #{USER}
-              echo "sudo chown #{USER}:#{USER} -R /home/#{USER}/.kube" | su - #{USER}
-            SHELL
-        }
+      subconfig.vm.provision "shell" do |supdate|
+        supdate.inline = <<-SHELL
+          echo "----------------------------------|| Update authorized_keys file"
+          cat /home/${1}/.ssh/id_rsa.pub >> /home/${1}/.ssh/authorized_keys
+          sed -i "s/${1}@master-node/${1}@worker-node-${2}/g" /home/${1}/.ssh/id_rsa.pub
+        SHELL
+        supdate.args   = ["#{USER}", "#{i}"]
       end
 
       subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
@@ -134,6 +128,24 @@ Vagrant.configure(API_VERSION) do |config|
         SHELL
         reboot.reboot = true
       end
+
+      subconfig.vm.provision "Join to Kubernetes Cluster", type: "shell" do |supdate|
+        supdate.inline = <<-SHELL
+          firewall-cmd --permanent --add-port=10250/tcp
+          firewall-cmd --permanent --add-port=30000-32767/tcp
+          firewall-cmd --reload
+
+          kube_join=\$(echo "ssh ${1}@${2} -o StrictHostKeyChecking=no '( cat /home/${1}/.bash_profile | grep KUBEADM_JOIN)'" | su - ${1})
+          kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
+          echo "sudo $kube_join" | su - ${1}
+
+          echo "scp -o StrictHostKeyChecking=no ${1}@${2}:/etc/kubernetes/admin.conf /home/${1}/" | su - ${1}
+          echo "mkdir -p /home/${1}/.kube" | su - ${1}
+          echo "cp -i /home/${1}/admin.conf /home/${1}/.kube/config" | su - ${1}
+          echo "sudo chown ${1}:${1} -R /home/${1}/.kube" | su - ${1}
+        SHELL
+        supdate.args = ["#{USER}", "master-node"]
+      end
     end
   end
 
@@ -141,4 +153,34 @@ Vagrant.configure(API_VERSION) do |config|
     vms.path = "script/bootstrap.sh"
     vms.args   = ["#{USER}"]
   end
+
+  config.vm.provision "ssh-configure", type: "shell" do |sshc|
+    ssh_prv_key = ""
+    ssh_pub_key = ""
+    if File.file?("ssh/id_rsa")
+      ssh_prv_key = File.read("ssh/id_rsa")
+      ssh_pub_key = File.read("ssh/id_rsa.pub")
+    else
+      puts "No SSH key found. You will need to remedy this before pushing to the repository."
+    end
+    sshc.inline = <<-SHELL
+      echo "----------------------------------|| Setup ssh"
+
+      if grep -sq "#{ssh_pub_key}" /home/${1}/.ssh/authorized_keys; then
+        echo "SSH keys already provisioned."
+        exit 0;
+      fi
+      echo "SSH key provisioning."
+      mkdir -p /home/${1}/.ssh/
+      touch /home/${1}/.ssh/authorized_keys
+      echo #{ssh_pub_key} > /home/${1}/.ssh/id_rsa.pub
+      chmod 644 /home/vagrant/.ssh/id_rsa.pub
+      echo "#{ssh_prv_key}" > /home/${1}/.ssh/id_rsa
+      chmod 600 /home/${1}/.ssh/id_rsa
+      chown -R ${1}:${1} /home/${1}
+      exit 0
+    SHELL
+    sshc.args = ["#{USER}", "#{NODE_COUNT}"]
+  end
+
 end
