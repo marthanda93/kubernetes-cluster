@@ -65,6 +65,10 @@ Vagrant.configure(API_VERSION) do |config|
       mns.path = "script/bootstrap_master.sh"
       mns.args   = ["#{USER}", "#{IP_PART}", "10"]
     end
+
+    subconfig.trigger.after :up do |trigger_local|
+      trigger_local.run = {inline: "/bin/bash -c 'vagrant ssh --no-tty -c \"cat /etc/kubernetes/admin.conf\" master-node > admin.conf && rm -f \${HOME}/.kube/config 2>/dev/null; mkdir -p \${HOME}/.kube; cp -i admin.conf \${HOME}/.kube/config; rm -f admin.conf'"}
+    end
   end
   
   (1..NODE_COUNT).each do |i|

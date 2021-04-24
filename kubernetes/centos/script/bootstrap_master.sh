@@ -8,7 +8,7 @@ firewall-cmd --permanent --add-port=10252/tcp
 firewall-cmd --permanent --add-port=8080/tcp
 firewall-cmd --reload
 
-join_command=$(kubeadm init --pod-network-cidr=${2}.0/16 --apiserver-advertise-address=${2}.${3} | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd '')
+join_command=$(kubeadm init --apiserver-advertise-address=${2}.${3} --apiserver-cert-extra-sans=${2}.${3}  --node-name master-node --pod-network-cidr=${2}.0/16 --token-ttl 0 | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd '')
 
 su ${1} -c 'mkdir -p $HOME/.kube'
 su ${1} -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config'
