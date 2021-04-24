@@ -114,11 +114,11 @@ Vagrant.configure(k8s['api_version']) do |config|
 						kube_join=\$(echo "ssh #{k8s['user']}@#{k8s['cluster']['master']} -o StrictHostKeyChecking=no '( cat /home/#{k8s['user']}/.bash_profile | grep KUBEADM_JOIN)'" | su - #{k8s['user']})
 						kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
 						echo "sudo $kube_join" | su - #{k8s['user']}
-
 						echo "scp -o StrictHostKeyChecking=no #{k8s['user']}@#{k8s['cluster']['master']}:/etc/kubernetes/admin.conf /home/#{k8s['user']}/" | su - #{k8s['user']}
 						echo "mkdir -p /home/#{k8s['user']}/.kube" | su - #{k8s['user']}
 						echo "cp -i /home/#{k8s['user']}/admin.conf /home/#{k8s['user']}/.kube/config" | su - #{k8s['user']}
 						echo "sudo chown #{k8s['user']}:#{k8s['user']} -R /home/#{k8s['user']}/.kube" | su - #{k8s['user']}
+						echo "kubectl label nodes #{k8s['cluster']['node']}-#{i} kubernetes.io/role=#{k8s['cluster']['node']}-#{i}" | su - #{k8s['user']}
 					SHELL
 				}
 			end
