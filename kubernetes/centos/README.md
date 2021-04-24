@@ -9,16 +9,7 @@ And any virtual environment, defualt can use [oracle virtualbox](https://www.vir
 To use kubernetes, can install `kubectl` to access cluster from host but can access via `ssh` to vritual machine also.
 
 ## Basic usage
-Very first `cd` to path where `Vagrant` file exists, and open `Vagrant` file to update setting like below
-
-```bash
-API_VERSION = "2"
-IMAGE = "centos/8"
-IP_PART = "192.160.0"
-NODE_COUNT = 2
-USER = "vagrant"
-CLUSTER = { "master" => "master-node", "node" => "worker-node" }
-```
+Very first `cd` to path where `Vagrant` file exists, and open `config.yaml` file to update setting before spin up cluster.
 
 ### Command line
 To start kubernetes cluster please follow below instructions:

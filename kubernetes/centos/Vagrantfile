@@ -1,12 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-API_VERSION = "2"
-IMAGE = "centos/8"
-IP_PART = "192.160.0"
-NODE_COUNT = 2
-USER = "vagrant"
-CLUSTER = { "master" => "master-node", "node" => "worker-node" }
+require 'yaml'
+k8s = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yaml'))
+ENV["LC_ALL"] = "en_US.UTF-8"
 
 $msg = <<MSG
 ------------------------------------------------------
@@ -19,33 +16,31 @@ URLS:
 ------------------------------------------------------
 MSG
 
-ENV["LC_ALL"] = "en_US.UTF-8"
-
-Vagrant.configure(API_VERSION) do |config|
-  config.vm.define "#{CLUSTER['master']}" do |subconfig|
+Vagrant.configure(k8s['api_version']) do |config|
+  config.vm.define "#{k8s['cluster']['master']}" do |subconfig|
     subconfig.vm.post_up_message = $msg
-    subconfig.vm.box = IMAGE
+    subconfig.vm.box = k8s['image']
 
-    subconfig.vm.hostname = "#{CLUSTER['master']}"
+    subconfig.vm.hostname = "#{k8s['cluster']['master']}"
 
-    subconfig.vm.network :private_network, ip: "#{IP_PART}.10"
-    subconfig.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
-    
+    subconfig.vm.network :private_network, ip: "#{k8s['ip_part']}.10"
+    # subconfig.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
+
     # Hostfile :: Master node
     subconfig.vm.provision "master-hostfile", type: "shell" do |mhf|
       mhf.inline = <<-SHELL
         echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts
       SHELL
-      mhf.args = ["#{IP_PART}.10", "#{CLUSTER['master']}"]
+      mhf.args = ["#{k8s['ip_part']}.10", "#{k8s['cluster']['master']}"]
     end
     # Hostfile :: Worker node
     subconfig.vm.provision "Update hostfile and authorized_keys", type: "shell" do |whu|
       whu.inline = <<-SHELL
         for i in $(eval echo {1..$2}); do 
-          echo -e "${3}.$((10 + $i))\t#{CLUSTER['node']}-${i}" | tee -a /etc/hosts
+          echo -e "${3}.$((10 + $i))\t#{k8s['cluster']['node']}-${i}" | tee -a /etc/hosts
         done
       SHELL
-      whu.args   = ["#{USER}", "#{NODE_COUNT}", "#{IP_PART}"]
+      whu.args   = ["#{k8s['user']}", "#{k8s['resources']['node']['count']}", "#{k8s['ip_part']}"]
     end
 
     subconfig.vm.provider "virtualbox" do |vb|
@@ -61,23 +56,23 @@ Vagrant.configure(API_VERSION) do |config|
       reboot.reboot = true
     end
 
-    subconfig.vm.provision "#{CLUSTER['master']}-setup", type: "shell" do |mns|
+    subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
       mns.path = "script/bootstrap_master.sh"
-      mns.args   = ["#{USER}", "#{IP_PART}", "10"]
+      mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
     end
 
     subconfig.trigger.after :up do |trigger_local|
-      trigger_local.run = {inline: "/bin/bash -c 'vagrant ssh --no-tty -c \"cat /etc/kubernetes/admin.conf\" #{CLUSTER['master']} > admin.conf && rm -f \${HOME}/.kube/config 2>/dev/null; mkdir -p \${HOME}/.kube; cp -i admin.conf \${HOME}/.kube/config; rm -f admin.conf'"}
+      trigger_local.run = {inline: "/bin/bash -c 'vagrant ssh --no-tty -c \"cat /etc/kubernetes/admin.conf\" #{k8s['cluster']['master']} > admin.conf && rm -f \${HOME}/.kube/config 2>/dev/null; mkdir -p \${HOME}/.kube; cp -i admin.conf \${HOME}/.kube/config; rm -f admin.conf'"}
     end
   end
   
-  (1..NODE_COUNT).each do |i|
-    config.vm.define "#{CLUSTER['node']}-#{i}" do |subconfig|
-      subconfig.vm.box = IMAGE
+  (1..k8s['resources']['node']['count']).each do |i|
+    config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
+      subconfig.vm.box = k8s['image']
 
-      subconfig.vm.hostname = "#{CLUSTER['node']}-#{i}"
+      subconfig.vm.hostname = "#{k8s['cluster']['node']}-#{i}"
 
-      subconfig.vm.network :private_network, ip: "#{IP_PART}.#{i + 10}"
+      subconfig.vm.network :private_network, ip: "#{k8s['ip_part']}.#{i + 10}"
 
       # Hostfile :: Master node
       subconfig.vm.provision "master-hostfile", type: "shell" do |s|
@@ -87,23 +82,23 @@ Vagrant.configure(API_VERSION) do |config|
           firewall-cmd --permanent --add-port=30000-32767/tcp
           firewall-cmd --reload
         SHELL
-        s.args = ["#{IP_PART}.10", "#{CLUSTER['master']}"]
+        s.args = ["#{k8s['ip_part']}.10", "#{k8s['cluster']['master']}"]
       end
       # Hostfile :: Worker node
-      (1..NODE_COUNT).each do |j|
+      (1..k8s['resources']['node']['count']).each do |j|
         if i != j
           subconfig.vm.provision "other-worker-hostfile", type: "shell" do |supdate|
             supdate.inline = <<-SHELL
               echo -e "$1\t$2" | tee -a /etc/hosts
             SHELL
-            supdate.args = ["#{IP_PART}.#{10 + j}", "#{CLUSTER['node']}-#{j}", "#{USER}", "#{i}"]
+            supdate.args = ["#{k8s['ip_part']}.#{10 + j}", "#{k8s['cluster']['node']}-#{j}", "#{k8s['user']}", "#{i}"]
           end
         else
           subconfig.vm.provision "self-worker-hostfile", type: "shell" do |supdate|
             supdate.inline = <<-SHELL
               echo -e "127.0.0.1\t$2" | tee -a /etc/hosts; echo -e "$1\t$2" | tee -a /etc/hosts
             SHELL
-            supdate.args = ["#{IP_PART}.#{10 + j}", "#{CLUSTER['node']}-#{j}", "#{USER}", "#{i}"]
+            supdate.args = ["#{k8s['ip_part']}.#{10 + j}", "#{k8s['cluster']['node']}-#{j}", "#{k8s['user']}", "#{i}"]
           end
         end
       end
@@ -114,19 +109,19 @@ Vagrant.configure(API_VERSION) do |config|
       end
 
       subconfig.trigger.after :up do |trigger_local|
-        trigger_local.run = {inline: "/bin/bash -c 'wpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{USER}/.ssh/id_rsa.pub\" #{CLUSTER['node']}-#{i}) && vagrant ssh --no-tty -c \"echo \${wpub_key} >> /home/#{USER}/.ssh/authorized_keys\" #{CLUSTER['master']}; mpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{USER}/.ssh/id_rsa.pub\" #{CLUSTER['master']}) && vagrant ssh --no-tty -c \"echo \${mpub_key} >> /home/#{USER}/.ssh/authorized_keys\" #{CLUSTER['node']}-#{i}'"}
+        trigger_local.run = {inline: "/bin/bash -c 'wpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{k8s['user']}/.ssh/id_rsa.pub\" #{k8s['cluster']['node']}-#{i}) && vagrant ssh --no-tty -c \"echo \${wpub_key} >> /home/#{k8s['user']}/.ssh/authorized_keys\" #{k8s['cluster']['master']}; mpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{k8s['user']}/.ssh/id_rsa.pub\" #{k8s['cluster']['master']}) && vagrant ssh --no-tty -c \"echo \${mpub_key} >> /home/#{k8s['user']}/.ssh/authorized_keys\" #{k8s['cluster']['node']}-#{i}'"}
       end
 
       subconfig.trigger.after :up do |trigger_remote|
         trigger_remote.run_remote = {inline: <<-SHELL
-              kube_join=\$(echo "ssh #{USER}@#{CLUSTER['master']} -o StrictHostKeyChecking=no '( cat /home/#{USER}/.bash_profile | grep KUBEADM_JOIN)'" | su - #{USER})
+              kube_join=\$(echo "ssh #{k8s['user']}@#{k8s['cluster']['master']} -o StrictHostKeyChecking=no '( cat /home/#{k8s['user']}/.bash_profile | grep KUBEADM_JOIN)'" | su - #{k8s['user']})
               kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
-              echo "sudo $kube_join" | su - #{USER}
+              echo "sudo $kube_join" | su - #{k8s['user']}
 
-              echo "scp -o StrictHostKeyChecking=no #{USER}@#{CLUSTER['master']}:/etc/kubernetes/admin.conf /home/#{USER}/" | su - #{USER}
-              echo "mkdir -p /home/#{USER}/.kube" | su - #{USER}
-              echo "cp -i /home/#{USER}/admin.conf /home/#{USER}/.kube/config" | su - #{USER}
-              echo "sudo chown #{USER}:#{USER} -R /home/#{USER}/.kube" | su - #{USER}
+              echo "scp -o StrictHostKeyChecking=no #{k8s['user']}@#{k8s['cluster']['master']}:/etc/kubernetes/admin.conf /home/#{k8s['user']}/" | su - #{k8s['user']}
+              echo "mkdir -p /home/#{k8s['user']}/.kube" | su - #{k8s['user']}
+              echo "cp -i /home/#{k8s['user']}/admin.conf /home/#{k8s['user']}/.kube/config" | su - #{k8s['user']}
+              echo "sudo chown #{k8s['user']}:#{k8s['user']} -R /home/#{k8s['user']}/.kube" | su - #{k8s['user']}
             SHELL
         }
       end
@@ -143,6 +138,6 @@ Vagrant.configure(API_VERSION) do |config|
 
   config.vm.provision "vm-setup", type: "shell" do |vms|
     vms.path = "script/bootstrap.sh"
-    vms.args   = ["#{USER}"]
+    vms.args   = ["#{k8s['user']}"]
   end
 end
