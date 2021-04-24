@@ -2,7 +2,6 @@
 api_version: "2"
 image: "centos/8"
 ip_part: "192.160.0"
-# node_count: 2
 user: "vagrant"
 
 cluster:
@@ -11,12 +10,12 @@ cluster:
 
 resources:
     master:
-        cpus: 1
-        memory: 1024
-    node:
-        count: 2
         cpus: 2
         memory: 2048
+    node:
+        cpus: 2
+        memory: 2048
+        count: 2
 
 net:
     network_type: private_network
