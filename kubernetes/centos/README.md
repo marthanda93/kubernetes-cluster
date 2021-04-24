@@ -23,8 +23,8 @@ vagrant up
 $ kubectl get nodes                                                                                                                                                 
 NAME            STATUS   ROLES                  AGE   VERSION
 master-node     Ready    control-plane,master   34m   v1.21.0
-worker-node-1   Ready    <none>                 28m   v1.21.0
-worker-node-2   Ready    <none>                 22m   v1.21.0
+worker-node-1   Ready    worker-node-1          28m   v1.21.0
+worker-node-2   Ready    worker-node-2          22m   v1.21.0
 ```
 
 Also you can access kubernetes cluster from any one virtual machine
@@ -34,8 +34,8 @@ $ vagrant ssh worker-node-1
 $ kubectl get nodes                                                                                                                                                 
 NAME            STATUS   ROLES                  AGE   VERSION
 master-node     Ready    control-plane,master   34m   v1.21.0
-worker-node-1   Ready    <none>                 28m   v1.21.0
-worker-node-2   Ready    <none>                 22m   v1.21.0
+worker-node-1   Ready    worker-node-1          28m   v1.21.0
+worker-node-2   Ready    worker-node-2          22m   v1.21.0
 ```
 
 And you are ready to use :smile:
