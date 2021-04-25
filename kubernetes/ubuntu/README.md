@@ -1,5 +1,5 @@
 # vagrant-kubernetes
-Vagrant for kubernetes on CentOS
+Vagrant for kubernetes
 
 ## Prerequisites
 
