@@ -34,7 +34,7 @@ systemctl enable --now haproxy
 modprobe overlay
 modprobe br_netfilter
 
-echo "ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa <<<y" | su - ${1}
+# echo "ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa <<<y" | su - ${1}
 sed -i '/net.ipv4.ip_forward/s/^#//g' /etc/sysctl.conf
 sed -i '/net.ipv6.conf.all.forwarding/s/^#//g' /etc/sysctl.conf
 sed -i "s/DEFAULT_FORWARD_POLICY=\"DROP\"/DEFAULT_FORWARD_POLICY=\"ACCEPT\"/g" /etc/default/ufw
@@ -44,3 +44,80 @@ sed -i '/net\/ipv6\/conf\/default\/forwarding/s/^#//g' /etc/ufw/sysctl.conf
 
 ufw enable <<<y
 ufw allow 22
+
+
+
+
+
+instance="192.160.0.10,127.0.0.1,kubernetes.default"
+ips=""
+
+for i in $(eval echo {1..$4}); do
+	ips="${ip_part}$2.$((10 + $i)),"
+done
+instance="${ip_part}${instance}"
+
+mkdir -p /opt/kubernetes
+cd /opt/kubernetes
+{
+
+cat > ca-config.json <<EOF
+{
+  "signing": {
+    "default": {
+      "expiry": "8760h"
+    },
+    "profiles": {
+      "kubernetes": {
+        "usages": ["signing", "key encipherment", "server auth", "client auth"],
+        "expiry": "8760h"
+      }
+    }
+  }
+}
+EOF
+
+cat > ca-csr.json <<EOF
+{
+  "CN": "Kubernetes",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "US",
+      "L": "Portland",
+      "O": "Kubernetes",
+      "OU": "CA",
+      "ST": "Oregon"
+    }
+  ]
+}
+EOF
+
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+
+}
+
+cat > kubernetes-csr.json <<EOF
+{
+  "CN": "kubernetes",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "US",
+      "L": "Portland",
+      "O": "system:masters",
+      "OU": "Kubernetes The Hard Way",
+      "ST": "Oregon"
+    }
+  ]
+}
+EOF
+
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -hostname=${instance} -profile=kubernetes kubernetes-csr.json | cfssljson -bare kubernetes
+sudo chown ${1} -R /opt/kubernetes
