@@ -2,10 +2,12 @@
 # vi: set ft=ruby :
 
 require 'yaml'
+require 'open3'
+
 k8s = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yaml'))
 ENV["LC_ALL"] = "en_US.UTF-8"
 
-$msg = <<MSG
+msg = <<MSG
 ------------------------------------------------------
 Kubernetes up and running ✌	☺ ✌ 
 
@@ -25,14 +27,47 @@ Vagrant.configure(k8s['api_version']) do |config|
 		end
 	end
 
-	# (1..k8s['resources']['node']['count']).each do |i|
-	# 	if File.exist?('lib/node.rb')
-	# 		eval(IO.read('lib/node.rb'), binding)
-	# 	end
-	# end
+	(1..k8s['resources']['node']['count']).each do |i|
+		if File.exist?('lib/node.rb')
+			eval(IO.read('lib/node.rb'), binding)
+		end
+	end
 
     config.vm.provision "vm-setup", type: "shell" do |vms|
         vms.path = "script/bootstrap.sh"
         vms.args   = ["#{k8s['user']}"]
     end
+
+    config.trigger.after :up do |trigger|
+        trigger.only_on = "#{k8s['cluster']['node']}-#{k8s['resources']['node']['count']}"
+        trigger.info = msg
+
+        trigger.ruby do |env,machine|
+            1.step(k8s['resources']['master']['count']) do |m|
+                mpub, stdeerr, status = Open3.capture3("vagrant ssh --no-tty -c 'cat /home/" + k8s['user'] + "/.ssh/id_rsa.pub' " + k8s['cluster']['master'] + "-#{m}")
+
+                1.step(k8s['resources']['master']['count']) do |n|
+                    next if m == n
+                    system("vagrant ssh --no-tty -c 'echo \"#{mpub}\" >> /home/" + k8s['user'] + "/.ssh/authorized_keys' " + k8s['cluster']['master'] + "-#{n}")
+                end
+
+                1.step(k8s['resources']['node']['count']) do |e|
+                    system("vagrant ssh --no-tty -c 'echo \"#{mpub}\" >> /home/" + k8s['user'] + "/.ssh/authorized_keys' " + k8s['cluster']['node'] + "-#{e}")
+                end
+            end
+
+            1.step(k8s['resources']['node']['count']) do |m|
+                wpub, stdeerr, status = Open3.capture3("vagrant ssh --no-tty -c 'cat /home/" + k8s['user'] + "/.ssh/id_rsa.pub' " + k8s['cluster']['node'] + "-#{m}")
+
+                1.step(k8s['resources']['node']['count']) do |n|
+                    next if m == n
+                    system("vagrant ssh --no-tty -c 'echo \"#{wpub}\" >> /home/" + k8s['user'] + "/.ssh/authorized_keys' " + k8s['cluster']['node'] + "-#{n}")
+                end
+
+                1.step(k8s['resources']['master']['count']) do |e|
+                    system("vagrant ssh --no-tty -c 'echo \"#{wpub}\" >> /home/" + k8s['user'] + "/.ssh/authorized_keys' " + k8s['cluster']['master'] + "-#{e}")
+                end
+            end
+        end
+    end 
 end

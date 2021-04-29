@@ -1,5 +1,5 @@
 config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
-    subconfig.vm.post_up_message = $msg
+    # subconfig.vm.post_up_message = $msg
     subconfig.vm.box = k8s['image']
     subconfig.vm.box_check_update = false
 
@@ -11,7 +11,7 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
         lb.inline = <<-SHELL
             echo -e "127.0.0.1\t$1" | tee -a /etc/hosts
         SHELL
-        lb.args = ["#{k8s['cluster']['master']}"]
+        lb.args = ["#{k8s['cluster']['master']}-#{i}"]
     end
     subconfig.vm.provision "Master and Worker node hostfile update", type: "shell" do |cluster|
         cluster.inline = <<-SHELL
@@ -29,24 +29,22 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
     end
 
     subconfig.vm.provider "virtualbox" do |vb|
+        vb.name = "#{k8s['cluster']['master']}-#{i}"
         vb.memory = k8s['resources']['master']['memory']
         vb.cpus = k8s['resources']['master']['cpus']
+        vb.gui = false
     end
 
-    subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
-        reboot.privileged = true
-        reboot.inline = <<-SHELL
-            echo "----------------------------------|| Reboot to load all config"
-        SHELL
-        reboot.reboot = true
-    end
+    # subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
+    #     reboot.privileged = true
+    #     reboot.inline = <<-SHELL
+    #         echo "----------------------------------|| Reboot to load all config"
+    #     SHELL
+    #     reboot.reboot = true
+    # end
 
-    subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
-        mns.path = "script/bootstrap_master.sh"
-        mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
-    end
-
-    subconfig.trigger.after :up do |trigger_local|
-    	trigger_local.run = {inline: "/bin/bash -c 'vagrant ssh --no-tty -c \"cat /home/#{k8s['user']}/.ssh/id_rsa.pub\" #{k8s['cluster']['master']}-#{i} > tmp/#{k8s['cluster']['master']}-#{i}.pub'"}
-    end
+    # subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
+    #     mns.path = "script/bootstrap_master.sh"
+    #     mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
+    # end 
 end
