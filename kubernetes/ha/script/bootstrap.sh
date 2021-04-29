@@ -18,12 +18,10 @@ swapoff -a
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl wget zip unzip vim git gnupg lsb-release software-properties-common telnet
 curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 apt-get update
-apt-get install -y kubelet kubeadm kubectl docker-ce docker-ce-cli containerd.io
-apt-mark hold kubelet kubeadm kubectl
+apt-get install -y docker-ce docker-ce-cli containerd.io
 usermod -aG docker ${1}
 
 cat <<EOF | tee /etc/docker/daemon.json
@@ -38,8 +36,6 @@ cat <<EOF | tee /etc/docker/daemon.json
 EOF
 
 systemctl enable --now docker
-systemctl enable --now kubelet
-# systemctl enable --now firewalld
 
 # Enable transparent masquerading and facilitate Virtual Extensible LAN (VxLAN) traffic for communication between Kubernetes pods across the cluster.
 modprobe overlay

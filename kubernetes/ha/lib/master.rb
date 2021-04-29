@@ -1,15 +1,17 @@
-config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
+config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
+    # subconfig.vm.post_up_message = $msg
     subconfig.vm.box = k8s['image']
+    subconfig.vm.box_check_update = false
 
-    subconfig.vm.hostname = "#{k8s['cluster']['node']}-#{i}"
-    subconfig.vm.network :private_network, ip: "#{k8s['ip_part']}.#{i + k8s['resources']['node']['ip_prefix']}"
+    subconfig.vm.hostname = "#{k8s['cluster']['master']}-#{i}"
+    subconfig.vm.network :private_network, ip: "#{k8s['ip_part']}.#{i + k8s['resources']['master']['ip_prefix']}"
 
     # Hostfile :: Master node
     subconfig.vm.provision "Load Balancer hostfile update", type: "shell" do |lb|
         lb.inline = <<-SHELL
             echo -e "127.0.0.1\t$1" | tee -a /etc/hosts
         SHELL
-        lb.args = ["#{k8s['cluster']['node']}"]
+        lb.args = ["#{k8s['cluster']['master']}-#{i}"]
     end
     subconfig.vm.provision "Master and Worker node hostfile update", type: "shell" do |cluster|
         cluster.inline = <<-SHELL
@@ -27,27 +29,22 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
     end
 
     subconfig.vm.provider "virtualbox" do |vb|
-        vb.memory = k8s['resources']['node']['memory']
-        vb.cpus = k8s['resources']['node']['cpus']
-        vb.name = "#{k8s['cluster']['node']}-#{i}"
+        vb.name = "#{k8s['cluster']['master']}-#{i}"
+        vb.memory = k8s['resources']['master']['memory']
+        vb.cpus = k8s['resources']['master']['cpus']
         vb.gui = false
     end
 
-    subconfig.vm.provision "firewall update", type: "shell" do |s|
-        s.inline = <<-SHELL
-            ufw allow 10250/tcp
-            ufw allow 10251/tcp
-            ufw allow 10255/tcp
-            ufw allow 30000:32767/tcp
-            ufw reload
+    subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
+        reboot.privileged = true
+        reboot.inline = <<-SHELL
+            echo "----------------------------------|| Reboot to load all config"
         SHELL
+        reboot.reboot = true
     end
 
-    # subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
-    #     reboot.privileged = true
-    #     reboot.inline = <<-SHELL
-    #         echo "----------------------------------|| Reboot to load all config"
-    #     SHELL
-    #     reboot.reboot = true
-    # end
+    subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
+        mns.path = "script/bootstrap_master.sh"
+        mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
+    end 
 end
