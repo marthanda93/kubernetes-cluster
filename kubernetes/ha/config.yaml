@@ -10,7 +10,7 @@ cluster:
 
 resources:
     master:
-        cpus: 3
+        cpus: 2
         memory: 2048
         count: 3
         ip_prefix: 10
