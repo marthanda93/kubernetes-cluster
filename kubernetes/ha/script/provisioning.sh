@@ -215,7 +215,6 @@ for i in $(eval echo {1..$7}); do
 	ips="${ips}$1.$(($2 + $i)),"
 done
 instance="${ips}${instance}"
-echo "-----------------------------------//${instance}"
 
 cat > kubernetes-csr.json <<EOF
 {

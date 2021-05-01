@@ -41,7 +41,7 @@ Vagrant.configure(k8s['api_version']) do |config|
 	end
 
 	# Exchange ssh keys to access each other, expect HA can access each of vm but not other vm cannot to access HA directly.
-    if File.exist?('lib/ssh.rb')
-        eval(IO.read('lib/ssh.rb'), binding)
+    if File.exist?('lib/trigger.rb')
+        eval(IO.read('lib/trigger.rb'), binding)
     end
 end
