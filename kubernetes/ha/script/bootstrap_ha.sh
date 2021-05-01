@@ -36,7 +36,6 @@ sed -i '/net\/ipv4\/conf\/all\/forwarding/s/^#//g' /etc/ufw/sysctl.conf
 sed -i '/net\/ipv6\/conf\/default\/forwarding/s/^#//g' /etc/ufw/sysctl.conf
 
 ufw enable <<<y
-ufw allow 2379:2380/tcp
 sudo ufw allow 2380/tcp
 ufw allow 443/tcp
 ufw allow 6443/tcp
