@@ -7,6 +7,7 @@ user: "vagrant"
 cluster:
     master: "controller"
     node: "worker"
+    ha: "load-balancer"
 
 resources:
     master:
@@ -19,6 +20,10 @@ resources:
         memory: 2048
         count: 2
         ip_prefix: 20
+    ha:
+        cpus: 1
+        memory: 1024
+        ip_prefix: 10
 
 net:
     network_type: private_network

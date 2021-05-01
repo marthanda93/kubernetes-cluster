@@ -7,9 +7,9 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
     # Hostfile :: Master node
     subconfig.vm.provision "Load Balancer hostfile update", type: "shell" do |lb|
         lb.inline = <<-SHELL
-            echo -e "127.0.0.1\t$1" | tee -a /etc/hosts
+            echo -e "127.0.0.1\t$1" | tee -a /etc/hosts; echo -e "$2\t$3" | tee -a /etc/hosts
         SHELL
-        lb.args = ["#{k8s['cluster']['node']}"]
+        lb.args = ["#{k8s['cluster']['node']}", "#{k8s['ip_part']}.#{k8s['resources']['ha']['ip_prefix']}", "#{k8s['cluster']['ha']}"]
     end
     subconfig.vm.provision "Master and Worker node hostfile update", type: "shell" do |cluster|
         cluster.inline = <<-SHELL
@@ -33,7 +33,12 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
         vb.gui = false
     end
 
-    subconfig.vm.provision "firewall update", type: "shell" do |s|
+    subconfig.vm.provision "vm-setup", type: "shell" do |vms|
+        vms.path = "script/bootstrap.sh"
+        vms.args   = ["#{k8s['user']}"]
+    end
+
+    subconfig.vm.provision "firewall updates", type: "shell" do |s|
         s.inline = <<-SHELL
             ufw allow 10250/tcp
             ufw allow 10251/tcp

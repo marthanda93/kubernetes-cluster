@@ -9,9 +9,9 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
     # Hostfile :: Master node
     subconfig.vm.provision "Load Balancer hostfile update", type: "shell" do |lb|
         lb.inline = <<-SHELL
-            echo -e "127.0.0.1\t$1" | tee -a /etc/hosts
+            echo -e "127.0.0.1\t$1" | tee -a /etc/hosts; echo -e "$2\t$3" | tee -a /etc/hosts
         SHELL
-        lb.args = ["#{k8s['cluster']['master']}-#{i}"]
+        lb.args = ["#{k8s['cluster']['master']}-#{i}", "#{k8s['ip_part']}.#{k8s['resources']['ha']['ip_prefix']}", "#{k8s['cluster']['ha']}"]
     end
     subconfig.vm.provision "Master and Worker node hostfile update", type: "shell" do |cluster|
         cluster.inline = <<-SHELL
@@ -33,6 +33,11 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
         vb.memory = k8s['resources']['master']['memory']
         vb.cpus = k8s['resources']['master']['cpus']
         vb.gui = false
+    end
+
+    subconfig.vm.provision "vm-setup", type: "shell" do |vms|
+        vms.path = "script/bootstrap.sh"
+        vms.args   = ["#{k8s['user']}"]
     end
 
     subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
