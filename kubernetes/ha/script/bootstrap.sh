@@ -48,6 +48,7 @@ sed -i "s/DEFAULT_FORWARD_POLICY=\"DROP\"/DEFAULT_FORWARD_POLICY=\"ACCEPT\"/g" /
 sed -i '/net\/ipv4\/ip_forward/s/^#//g' /etc/ufw/sysctl.conf
 sed -i '/net\/ipv4\/conf\/all\/forwarding/s/^#//g' /etc/ufw/sysctl.conf
 sed -i '/net\/ipv6\/conf\/default\/forwarding/s/^#//g' /etc/ufw/sysctl.conf
+mkdir -p /home/vagrant/certificates && chown vagrant:vagrant -R $_
 
 ufw enable <<<y
 ufw allow 22

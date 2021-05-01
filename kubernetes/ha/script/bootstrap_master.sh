@@ -18,13 +18,55 @@ ufw allow 2379:2380/tcp
 sudo ufw allow 2380/tcp
 sudo ufw reload
 
-# join_command=$(kubeadm init --apiserver-advertise-address=${2}.${3} --apiserver-cert-extra-sans=${2}.${3}  --node-name master-node --pod-network-cidr=${2}.0/16 --token-ttl 0 | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd '')
+{
+    wget -q --https-only "https://github.com/etcd-io/etcd/releases/download/v3.4.10/etcd-v3.4.10-linux-amd64.tar.gz"
+    tar -xvf etcd-v3.4.10-linux-amd64.tar.gz
+    mv etcd-v3.4.10-linux-amd64/etcd* /usr/local/bin/
 
-# su ${1} -c 'mkdir -p $HOME/.kube'
-# su ${1} -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config'
-# su ${1} -c 'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
-# su ${1} -c 'echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> $HOME/.bash_profile'
-# chown ${1} /etc/kubernetes/admin.conf
-# echo "export KUBEADM_JOIN=\"${join_command}\"" >> /home/${1}/.bash_profile
+    mkdir -p /etc/etcd /var/lib/etcd
+    chmod 700 /var/lib/etcd
+}
 
-# su ${1} -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
+INTERNAL_IP="${1}.$(($2 + $3))"
+ETCD_NAME="${4}-${3}"
+INSTANCE=""
+
+for i in $(eval echo {1..$5}); do
+	INSTANCE="${INSTANCE}$4-$i=https://$1.$(($2 + $i)):2380,"
+done
+
+cat <<EOF | tee /etc/systemd/system/etcd.service
+[Unit]
+Description=etcd
+Documentation=https://github.com/coreos
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/etcd \\
+  --name ${ETCD_NAME} \\
+  --cert-file=/etc/etcd/kubernetes.pem \\
+  --key-file=/etc/etcd/kubernetes-key.pem \\
+  --peer-cert-file=/etc/etcd/kubernetes.pem \\
+  --peer-key-file=/etc/etcd/kubernetes-key.pem \\
+  --trusted-ca-file=/etc/etcd/ca.pem \\
+  --peer-trusted-ca-file=/etc/etcd/ca.pem \\
+  --peer-client-cert-auth \\
+  --client-cert-auth \\
+  --initial-advertise-peer-urls https://${INTERNAL_IP}:2380 \\
+  --listen-peer-urls https://${INTERNAL_IP}:2380 \\
+  --listen-client-urls https://${INTERNAL_IP}:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://${INTERNAL_IP}:2379 \\
+  --initial-cluster-token etcd-cluster-0 \\
+  --initial-cluster ${INSTANCE} \\
+  --initial-cluster-state new \\
+  --data-dir=/var/lib/etcd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+{
+  systemctl daemon-reload
+}

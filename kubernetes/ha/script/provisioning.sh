@@ -81,7 +81,7 @@ cfssl gencert \
 
 # The Kubelet Client Certificates
 for i in $(eval echo {1..$8}); do
-instance="worker-$i"
+instance="$6-$i"
 instance_ip="$1.$(($3+$i))"
 
 cat > ${instance}-csr.json <<EOF

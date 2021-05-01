@@ -5,10 +5,6 @@ add-apt-repository ppa:vbernat/haproxy-1.8 --yes
 apt-get update
 apt-get install -qq -y haproxy curl wget zip unzip telnet
 
-# wget -q https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64 -O /usr/local/bin/cfssl
-# wget -q https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_1.5.0_linux_amd64 -O /usr/local/bin/cfssljson
-# chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
-
 sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 swapoff -a
 

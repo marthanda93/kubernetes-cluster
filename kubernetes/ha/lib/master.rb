@@ -40,6 +40,11 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
         vms.args   = ["#{k8s['user']}"]
     end
 
+    subconfig.vm.provision "#{k8s['cluster']['master']}-#{i}-setup", type: "shell" do |mns|
+        mns.path = "script/bootstrap_master.sh"
+        mns.args   = ["#{k8s['ip_part']}", "#{k8s['resources']['master']['ip_prefix']}", "#{i}", "#{k8s['cluster']['master']}", "#{k8s['resources']['master']['count']}"]
+    end
+
     subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
         reboot.privileged = true
         reboot.inline = <<-SHELL
@@ -47,9 +52,4 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
         SHELL
         reboot.reboot = true
     end
-
-    subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
-        mns.path = "script/bootstrap_master.sh"
-        mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
-    end 
 end
