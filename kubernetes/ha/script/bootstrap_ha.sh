@@ -10,7 +10,7 @@ swapoff -a
 
 tee -a /etc/haproxy/haproxy.cfg << END
         frontend kubernetes
-        bind 10.10.10.93:6443
+        bind *:6443
         option tcplog
         mode tcp
         default_backend kubernetes-master-nodes

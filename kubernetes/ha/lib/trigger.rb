@@ -41,6 +41,10 @@ config.trigger.after :up do |trigger|
 
             # Push all required configs/certificates to worker node
             system("vagrant ssh --no-tty -c 'scp -o StrictHostKeyChecking=no /opt/certificates/" + k8s['cluster']['node'] + "-#{m}.kubeconfig" + " /opt/certificates/kube-proxy.kubeconfig /opt/certificates/ca.pem /opt/certificates/" + k8s['cluster']['node'] + "-#{m}.pem /opt/certificates/" + k8s['cluster']['node'] + "-#{m}-key.pem " + k8s['cluster']['node'] + "-#{m}" + ":~/certificates/' " + k8s['cluster']['ha'])
+            # Bootstrapping the Kubernetes Worker Nodes
+            system("vagrant ssh --no-tty -c 'sudo cp /home/vagrant/certificates/{" + k8s['cluster']['node'] + "-#{m}-key.pem," + k8s['cluster']['node'] + "-#{m}.pem} /var/lib/kubelet/; sudo cp /home/vagrant/certificates/" + k8s['cluster']['node'] + "-#{m}.kubeconfig /var/lib/kubelet/kubeconfig; sudo cp /home/vagrant/certificates/ca.pem /var/lib/kubernetes/; sudo cp /home/vagrant/certificates/kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig; sudo systemctl enable --now kubelet; sudo systemctl enable --now kube-proxy; sudo systemctl enable --now containerd' " + k8s['cluster']['node'] + "-#{m}")
         end
+
+        system("vagrant ssh --no-tty -c 'kubectl apply --kubeconfig /home/vagrant/certificates/admin.kubeconfig -f /home/vagrant/certificates/cluster_role.yaml; kubectl apply --kubeconfig /home/vagrant/certificates/admin.kubeconfig -f /home/vagrant/certificates/cluster_role_binding.yaml' " + k8s['cluster']['master'] + "-1")
     end
 end

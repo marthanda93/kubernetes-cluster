@@ -18,24 +18,24 @@ swapoff -a
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl wget zip unzip vim git gnupg lsb-release software-properties-common telnet
 curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io
-usermod -aG docker ${1}
+# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+# add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+# apt-get update
+# apt-get install -y docker-ce docker-ce-cli containerd.io
+# usermod -aG docker ${1}
 
-cat <<EOF | tee /etc/docker/daemon.json
-{
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "100m"
-  },
-  "storage-driver": "overlay2"
-}
-EOF
+# cat <<EOF | tee /etc/docker/daemon.json
+# {
+#   "exec-opts": ["native.cgroupdriver=systemd"],
+#   "log-driver": "json-file",
+#   "log-opts": {
+#     "max-size": "100m"
+#   },
+#   "storage-driver": "overlay2"
+# }
+# EOF
 
-systemctl enable --now docker
+# systemctl enable --now docker
 
 # Enable transparent masquerading and facilitate Virtual Extensible LAN (VxLAN) traffic for communication between Kubernetes pods across the cluster.
 modprobe overlay

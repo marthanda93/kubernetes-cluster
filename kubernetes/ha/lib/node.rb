@@ -38,14 +38,8 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
         vms.args   = ["#{k8s['user']}"]
     end
 
-    subconfig.vm.provision "firewall updates", type: "shell" do |s|
-        s.inline = <<-SHELL
-            ufw allow 10250/tcp
-            ufw allow 10251/tcp
-            ufw allow 10255/tcp
-            ufw allow 30000:32767/tcp
-            ufw reload
-        SHELL
+    subconfig.vm.provision "kube-setup", type: "shell" do |ks|
+        ks.path = "script/bootstrap_node.sh"
     end
 
     subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
