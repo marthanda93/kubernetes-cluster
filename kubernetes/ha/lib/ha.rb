@@ -34,9 +34,14 @@ config.vm.define "#{k8s['cluster']['ha']}" do |subconfig|
         vb.gui = false
     end
 
-    subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |lb|
+    subconfig.vm.provision "#{k8s['cluster']['ha']}-setup", type: "shell" do |lb|
         lb.path = "script/bootstrap_ha.sh"
         lb.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "#{k8s['cluster']['master']}", "#{k8s['resources']['master']['count']}"]
+    end
+
+    subconfig.vm.provision "#{k8s['cluster']['ha']}-setup", type: "shell" do |lb|
+        lb.path = "script/provisioning.sh"
+        lb.args   = ["#{k8s['ip_part']}", "#{k8s['resources']['master']['ip_prefix']}", "#{k8s['resources']['node']['ip_prefix']}", "#{k8s['resources']['ha']['ip_prefix']}", "#{k8s['cluster']['master']}", "#{k8s['cluster']['node']}", "#{k8s['resources']['master']['count']}", "#{k8s['resources']['node']['count']}"]
     end
 
     subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
