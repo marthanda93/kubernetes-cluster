@@ -275,3 +275,5 @@ cfssl gencert \
   service-account-csr.json | cfssljson -bare service-account
 
 }
+
+chown vagrant -R /opt/certificates
