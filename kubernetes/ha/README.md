@@ -29,7 +29,7 @@ And any virtual environment, defualt can use [oracle virtualbox](https://www.vir
 To use kubernetes, can install `kubectl` to access cluster from host but can access via `ssh` to vritual machine also.
 
 ## Basic usage
-Very first `cd` to path where `Vagrant` file exists(``), and open `config.yaml` file to update setting before spin up cluster.
+Very first `cd` to path where `Vagrant` file exists(`VAAS/kubernetes/ha`), and open `config.yaml` file to update setting before spin up cluster.
 
 ### Command line
 To start kubernetes cluster please follow below instructions:
