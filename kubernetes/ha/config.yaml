@@ -11,8 +11,8 @@ cluster:
 
 resources:
     master:
-        cpus: 2
-        memory: 2048
+        cpus: 1
+        memory: 1024
         count: 3
         ip_prefix: 10
     node:

@@ -20,6 +20,7 @@ MSG
 
 Vagrant.configure(k8s['api_version']) do |config|
 	config.vm.boot_timeout = 600
+	# config.ssh.keep_alive = true
 	
 	# Load Balancer vm
 	if File.exist?('lib/ha.rb')

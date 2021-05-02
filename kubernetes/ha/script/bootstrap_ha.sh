@@ -22,7 +22,6 @@ $(for i in $(eval echo {1..$4}); do
 	echo "        server $3-$i $2.$((10 + $i)):6443 check fall 3 rise 2"
 done)
 END
-systemctl enable --now haproxy
 
 modprobe overlay
 modprobe br_netfilter
