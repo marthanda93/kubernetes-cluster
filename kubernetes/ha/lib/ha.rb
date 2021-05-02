@@ -49,11 +49,5 @@ config.vm.define "#{k8s['cluster']['ha']}" do |subconfig|
         lb_config.args   = ["#{k8s['ip_part']}", "#{k8s['resources']['master']['ip_prefix']}", "#{k8s['resources']['node']['ip_prefix']}", "#{k8s['resources']['ha']['ip_prefix']}", "#{k8s['cluster']['master']}", "#{k8s['cluster']['node']}", "#{k8s['resources']['master']['count']}", "#{k8s['resources']['node']['count']}"]
     end
 
-    subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
-        reboot.privileged = true
-        reboot.inline = <<-SHELL
-            echo "----------------------------------|| Reboot to load all config"
-        SHELL
-        reboot.reboot = true
-    end
+    subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"
 end

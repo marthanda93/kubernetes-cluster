@@ -42,11 +42,5 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
         ks.path = "script/bootstrap_node.sh"
     end
 
-    subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
-        reboot.privileged = true
-        reboot.inline = <<-SHELL
-            echo "----------------------------------|| Reboot to load all config"
-        SHELL
-        reboot.reboot = true
-    end
+    subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"
 end

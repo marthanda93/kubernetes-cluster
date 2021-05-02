@@ -61,5 +61,4 @@ ufw allow 6443/tcp
 ufw allow 22
 
 # The SSH connection was unexpectedly closed by the remote end
-echo "ClientAliveInterval 30" >> /etc/ssh/ssh_config
-echo "ClientAliveCountMax 5" >> /etc/ssh/ssh_config
+echo -e "ClientAliveInterval 600\nTCPKeepAlive yes\nClientAliveCountMax 10" >> /etc/ssh/sshd_config
