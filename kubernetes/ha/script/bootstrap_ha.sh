@@ -59,3 +59,7 @@ sudo ufw allow 2380/tcp
 ufw allow 443/tcp
 ufw allow 6443/tcp
 ufw allow 22
+
+# The SSH connection was unexpectedly closed by the remote end
+echo "ClientAliveInterval 30" >> /etc/ssh/ssh_config
+echo "ClientAliveCountMax 5" >> /etc/ssh/ssh_config

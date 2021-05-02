@@ -53,5 +53,8 @@ config.trigger.after :up do |trigger|
         system("vagrant ssh --no-tty -c 'cat /opt/certificates/admin.pem' " + k8s['cluster']['ha'] + " > ${HOME}/.kube/admin.pem")
         system("vagrant ssh --no-tty -c 'cat /opt/certificates/admin-key.pem' " + k8s['cluster']['ha'] + " > ${HOME}/.kube/admin-key.pem")
         system("kubectl config set-cluster kubernetes-the-hard-way --certificate-authority=${HOME}/.kube/ca.pem --embed-certs=true --server=https://#{k8s['ip_part']}.#{k8s['resources']['ha']['ip_prefix']}:6443 && kubectl config set-credentials admin --client-certificate=${HOME}/.kube/admin.pem --client-key=${HOME}/.kube/admin-key.pem && kubectl config set-context kubernetes-the-hard-way --cluster=kubernetes-the-hard-way --user=admin && kubectl config use-context kubernetes-the-hard-way")
+
+        # Deploying the DNS Cluster Add-on
+        system("kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml")
     end
 end
