@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+# disable man-db installation
+{
+apt-get remove man-db --purge -y
+sudo rm -rf /usr/share/locale/
+sudo rm -rf /usr/share/man/
+sudo rm -rf /usr/share/doc/
+
+cat > /etc/dpkg/dpkg.cfg.d/01_nodoc <<EOF
+# Delete locales
+path-exclude=/usr/share/locale/*
+
+# Delete man pages
+path-exclude=/usr/share/man/*
+
+# Delete docs
+path-exclude=/usr/share/doc/*
+path-include=/usr/share/doc/*/copyright
+EOF
+}
+
 apt-get update
 add-apt-repository ppa:vbernat/haproxy-1.8 --yes
 apt-get update

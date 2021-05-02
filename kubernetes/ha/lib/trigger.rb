@@ -46,8 +46,12 @@ config.trigger.after :up do |trigger|
         end
 
         system("vagrant ssh --no-tty -c 'kubectl apply --kubeconfig /home/vagrant/certificates/admin.kubeconfig -f /home/vagrant/certificates/cluster_role.yaml; kubectl apply --kubeconfig /home/vagrant/certificates/admin.kubeconfig -f /home/vagrant/certificates/cluster_role_binding.yaml' " + k8s['cluster']['master'] + "-1")
-        # copy pem files in local to generate kube config
-        system("vagrant ssh --no-tty -c 'scp -o StrictHostKeyChecking=no " + k8s['cluster']['ha'] + ":/opt/certificates/{ca.pem,admin.pem,admin-key.pem} /tmp/")
-        system("kubectl config set-cluster kubernetes-the-hard-way --certificate-authority=/tmp/ca.pem --embed-certs=true --server=https://" + k8s['ip_part'] + "." + k8s['resources']['ha']['ip_prefix'] + ":6443 && kubectl config set-credentials admin --client-certificate=/tmp/admin.pem --client-key=/tmp/admin-key.pem && kubectl config set-context kubernetes-the-hard-way --cluster=kubernetes-the-hard-way --user=admin && kubectl config use-context kubernetes-the-hard-way")
+        
+        # Configuring kubectl for Remote Access
+        system("mkdir -p ${HOME}/.kube")
+        system("vagrant ssh --no-tty -c 'cat /opt/certificates/ca.pem' " + k8s['cluster']['ha'] + " > ${HOME}/.kube/ca.pem")
+        system("vagrant ssh --no-tty -c 'cat /opt/certificates/admin.pem' " + k8s['cluster']['ha'] + " > ${HOME}/.kube/admin.pem")
+        system("vagrant ssh --no-tty -c 'cat /opt/certificates/admin-key.pem' " + k8s['cluster']['ha'] + " > ${HOME}/.kube/admin-key.pem")
+        system("kubectl config set-cluster kubernetes-the-hard-way --certificate-authority=${HOME}/.kube/ca.pem --embed-certs=true --server=https://#{k8s['ip_part']}.#{k8s['resources']['ha']['ip_prefix']}:6443 && kubectl config set-credentials admin --client-certificate=${HOME}/.kube/admin.pem --client-key=${HOME}/.kube/admin-key.pem && kubectl config set-context kubernetes-the-hard-way --cluster=kubernetes-the-hard-way --user=admin && kubectl config use-context kubernetes-the-hard-way")
     end
 end
