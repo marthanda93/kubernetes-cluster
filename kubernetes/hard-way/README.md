@@ -3,7 +3,7 @@ Kubernetes The Hard Way on Vagrant
 
 ## Big Thanks to kelseyhightower
 Most of steps taken from [kelseyhightower public repo](https://github.com/kelseyhightower/kubernetes-the-hard-way).
-Arranged accordingly to Vagrant with Virtualbox so that as you run `vagrant up` from `VAAS/kubernetes/ha` and wait for completion(it do everythings which is required to setup cluster), after that start using `kubectl` either from your host or any of vm expect `load balancer`.
+Arranged accordingly to Vagrant with Virtualbox so that as you run `vagrant up` from `VAAS/kubernetes/hard-way` and wait for completion(it do everythings which is required to setup cluster), after that start using `kubectl` either from your host or any of vm expect `load balancer`.
 
 ```bash
 $ kubectl get cs
@@ -29,7 +29,7 @@ And any virtual environment, defualt can use [oracle virtualbox](https://www.vir
 To use kubernetes, can install `kubectl` to access cluster from host but can access via `ssh` to vritual machine also.
 
 ## Basic usage
-Very first `cd` to path where `Vagrant` file exists(`VAAS/kubernetes/ha`), and open `config.yaml` file to update setting before spin up cluster.
+Very first `cd` to path where `Vagrant` file exists(`VAAS/kubernetes/hard-way`), and open `config.yaml` file to update setting before spin up cluster.
 
 ### Command line
 To start kubernetes cluster please follow below instructions:
