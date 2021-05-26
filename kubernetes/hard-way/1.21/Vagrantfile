@@ -21,10 +21,17 @@ MSG
 Vagrant.configure(k8s['api_version']) do |config|
 	config.vm.boot_timeout = 600
 	# config.ssh.keep_alive = true
+	
+	# Load Balancer vm
+	if File.exist?('lib/ha.rb')
+		eval(IO.read('lib/ha.rb'), binding)
+	end
 
 	# Kubernetes Controller cluster
-	if File.exist?('lib/master.rb')
-		eval(IO.read('lib/master.rb'), binding)
+	(1..k8s['resources']['master']['count']).each do |i|
+		if File.exist?('lib/master.rb')
+			eval(IO.read('lib/master.rb'), binding)
+		end
 	end
 
 	# Kubernetes Worker cluster
@@ -39,4 +46,3 @@ Vagrant.configure(k8s['api_version']) do |config|
         eval(IO.read('lib/trigger.rb'), binding)
     end
 end
-

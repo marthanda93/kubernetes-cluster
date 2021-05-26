@@ -1,5 +1,5 @@
 # vagrant-kubernetes
-Kubernetes The Hard Way with Kubeadm on Vagrant
+Kubernetes The Hard Way on Vagrant
 
 ## Big Thanks to kelseyhightower
 Most of steps taken from [kelseyhightower public repo](https://github.com/kelseyhightower/kubernetes-the-hard-way).
