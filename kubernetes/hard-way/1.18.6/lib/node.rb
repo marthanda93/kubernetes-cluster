@@ -40,6 +40,7 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
 
     subconfig.vm.provision "kube-setup", type: "shell" do |ks|
         ks.path = "script/bootstrap_node.sh"
+        ks.args   = ["#{k8s['version']['kubernetes_bin']}", "#{k8s['version']['containerd']}", "#{k8s['version']['CNI_plugins']}", "#{k8s['version']['runc']}", "#{k8s['version']['cri-tools']}"]
     end
 
     subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"

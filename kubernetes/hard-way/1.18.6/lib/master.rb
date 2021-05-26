@@ -42,7 +42,7 @@ config.vm.define "#{k8s['cluster']['master']}-#{i}" do |subconfig|
 
     subconfig.vm.provision "#{k8s['cluster']['master']}-#{i}-setup", type: "shell" do |mns|
         mns.path = "script/bootstrap_master.sh"
-        mns.args   = ["#{k8s['ip_part']}", "#{k8s['resources']['master']['ip_prefix']}", "#{i}", "#{k8s['cluster']['master']}", "#{k8s['resources']['master']['count']}"]
+        mns.args   = ["#{k8s['ip_part']}", "#{k8s['resources']['master']['ip_prefix']}", "#{i}", "#{k8s['cluster']['master']}", "#{k8s['resources']['master']['count']}", "#{k8s['version']['kubernetes_bin']}", "#{k8s['version']['etcd']}"]
     end
 
     subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"

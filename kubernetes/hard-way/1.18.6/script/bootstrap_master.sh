@@ -35,9 +35,9 @@ sudo ufw reload
 
 # Bootstrapping the etcd Cluster
 {
-    wget -q --https-only "https://github.com/etcd-io/etcd/releases/download/v3.4.10/etcd-v3.4.10-linux-amd64.tar.gz"
-    tar -xvf etcd-v3.4.10-linux-amd64.tar.gz
-    mv etcd-v3.4.10-linux-amd64/etcd* /usr/local/bin/
+    wget -q --https-only "https://github.com/etcd-io/etcd/releases/download/v${7}/etcd-v${7}-linux-amd64.tar.gz"
+    tar -xvf etcd-v${7}-linux-amd64.tar.gz
+    mv etcd-v${7}-linux-amd64/etcd* /usr/local/bin/
 
     mkdir -p /etc/etcd /var/lib/etcd
     chmod 700 /var/lib/etcd
@@ -89,10 +89,10 @@ EOF
 
 # Bootstrapping the Kubernetes Control Plane
 wget -q --https-only \
-    "https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kube-apiserver" \
-    "https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kube-controller-manager" \
-    "https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kube-scheduler" \
-    "https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kubectl"
+    "https://storage.googleapis.com/kubernetes-release/release/v${6}/bin/linux/amd64/kube-apiserver" \
+    "https://storage.googleapis.com/kubernetes-release/release/v${6}/bin/linux/amd64/kube-controller-manager" \
+    "https://storage.googleapis.com/kubernetes-release/release/v${6}/bin/linux/amd64/kube-scheduler" \
+    "https://storage.googleapis.com/kubernetes-release/release/v${6}/bin/linux/amd64/kubectl"
 
 {
     mv kubernetes.default.svc.cluster.local /etc/nginx/sites-available/kubernetes.default.svc.cluster.local
