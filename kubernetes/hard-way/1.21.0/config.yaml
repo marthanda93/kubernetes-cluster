@@ -4,6 +4,14 @@ image: "bento/ubuntu-18.04"
 ip_part: "10.240.0"
 user: "vagrant"
 
+version:
+    kubernetes_bin: "1.21.0"
+    etcd: "3.4.16"
+    containerd: "1.5.2"
+    CNI_plugins: "0.9.1"
+    runc: "1.0.0-rc95"
+    cri-tools: "1.21.0"
+
 cluster:
     master: "controller"
     node: "worker"
