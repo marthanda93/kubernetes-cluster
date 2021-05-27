@@ -214,7 +214,7 @@ EOF
 
 # RBAC for Kubelet Authorization
 cat <<EOF | tee /home/vagrant/certificates/cluster_role.yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   annotations:
@@ -236,7 +236,7 @@ rules:
 EOF
 
 cat <<EOF | tee /home/vagrant/certificates/cluster_role_binding.yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:kube-apiserver
