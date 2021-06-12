@@ -24,7 +24,7 @@ config.trigger.after :up do |trigger|
             # Push all required configs/certificates to master node
             system("vagrant ssh --no-tty -c 'scp -o StrictHostKeyChecking=no /opt/certificates/{ca.pem,ca-key.pem,kubernetes-key.pem,kubernetes.pem} " + k8s['cluster']['master'] + "-#{m}" + ":~/certificates/' " + k8s['cluster']['ha'])
             # Start etcd on all controller
-            system("vagrant ssh --no-tty -c 'sudo cp /home/vagrant/certificates/{ca.pem,kubernetes-key.pem,kubernetes.pem} /etc/etcd/; sudo cp /home/vagrant/certificates/{ca.pem,ca-key.pem,kubernetes-key.pem,kubernetes.pem} /var/lib/kubernetes/; sudo systemctl enable --now etcd; mkdir -p /home/" + k8s['user'] + "/.kube)
+            system("vagrant ssh --no-tty -c 'sudo cp /home/vagrant/certificates/{ca.pem,kubernetes-key.pem,kubernetes.pem} /etc/etcd/; sudo cp /home/vagrant/certificates/{ca.pem,ca-key.pem,kubernetes-key.pem,kubernetes.pem} /var/lib/kubernetes/; sudo systemctl enable --now etcd; mkdir -p /home/" + k8s['user'] + "/.kube' " + k8s['cluster']['master'] + "-#{m}")
         end
 
         1.step(k8s['resources']['node']['count']) do |m|
@@ -44,7 +44,7 @@ config.trigger.after :up do |trigger|
             # Push all required configs/certificates to worker node
             system("vagrant ssh --no-tty -c 'scp -o StrictHostKeyChecking=no /opt/certificates/{ca-key.pem,kubernetes-key.pem,kubernetes.pem} " + k8s['cluster']['node'] + "-#{m}" + ":~/certificates/' " + k8s['cluster']['ha'])
             # Bootstrapping the Kubernetes Worker Nodes
-            system("vagrant ssh --no-tty -c 'sudo cp /home/vagrant/certificates/ca.pem /var/lib/kubernetes/; sudo systemctl enable --now containerd; mkdir -p /home/" + k8s['user'] + "/.kube)
+            system("vagrant ssh --no-tty -c 'sudo cp /home/vagrant/certificates/ca.pem /var/lib/kubernetes/; sudo systemctl enable --now containerd; mkdir -p /home/" + k8s['user'] + "/.kube' " + k8s['cluster']['node'] + "-#{m}")
         end
     end
 end

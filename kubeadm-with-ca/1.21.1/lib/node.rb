@@ -35,7 +35,7 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
 
     subconfig.vm.provision "vm-setup", type: "shell" do |vms|
         vms.path = "script/bootstrap.sh"
-        vms.args   = ["#{k8s['user']}"]
+        vms.args   = ["#{k8s['user']}", "#{k8s['version']['kubernetes_bin']}"]
     end
 
     subconfig.vm.provision "kube-setup", type: "shell" do |ks|

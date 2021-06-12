@@ -18,9 +18,9 @@ swapoff -a
 # disable man-db installation
 {
 apt-get remove man-db --purge -y
-sudo rm -rf /usr/share/locale/
-sudo rm -rf /usr/share/man/
-sudo rm -rf /usr/share/doc/
+rm -rf /usr/share/locale/
+rm -rf /usr/share/man/
+rm -rf /usr/share/doc/
 
 cat > /etc/dpkg/dpkg.cfg.d/01_nodoc <<EOF
 # Delete locales
@@ -44,7 +44,7 @@ apt-get install -y kubelet kubeadm
 apt-mark hold kubelet kubeadm
 
 {
-    wget -q --https-only "https://storage.googleapis.com/kubernetes-release/release/v${6}/bin/linux/amd64/kubectl"
+    wget -q --https-only "https://storage.googleapis.com/kubernetes-release/release/v${2}/bin/linux/amd64/kubectl"
     chmod +x kubectl
     mv kubectl /usr/local/bin/
 
