@@ -32,9 +32,21 @@ config.vm.define "#{k8s['cluster']['master']}" do |subconfig|
         whu.args   = ["#{k8s['user']}", "#{k8s['resources']['node']['count']}", "#{k8s['ip_part']}"]
     end
 
-    subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
-        mns.path = "script/bootstrap_master.sh"
-        mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
+    subconfig.vm.provision "Enable Firewall", type: "shell" do |enable_firewall|
+        enable_firewall.inline = <<-SHELL
+            firewall-cmd --permanent --add-port=6443/tcp
+            firewall-cmd --permanent --add-port=2379-2380/tcp
+            firewall-cmd --permanent --add-port=10250/tcp
+            firewall-cmd --permanent --add-port=10251/tcp
+            firewall-cmd --permanent --add-port=10252/tcp
+            firewall-cmd --permanent --add-port=8080/tcp
+            firewall-cmd --permanent --add-port=179/tcp
+            firewall-cmd --permanent --add-port=5473/tcp
+            firewall-cmd --permanent --add-port=4789/udp
+            firewall-cmd --permanent --add-port=443/tcp
+            firewall-cmd --permanent --add-port=2379/tcp
+            firewall-cmd --reload
+        SHELL
     end
 
     subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"
