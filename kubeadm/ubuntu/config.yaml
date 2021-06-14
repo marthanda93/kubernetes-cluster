@@ -15,7 +15,7 @@ resources:
     node:
         cpus: 2
         memory: 2048
-        count: 2
+        count: 1
 
 net:
     network_type: private_network

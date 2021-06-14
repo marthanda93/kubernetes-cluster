@@ -28,20 +28,15 @@ config.vm.define "#{k8s['cluster']['master']}" do |subconfig|
         vb.cpus = k8s['resources']['master']['cpus']
     end
 
-    subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
-        reboot.privileged = true
-        reboot.inline = <<-SHELL
-            echo "----------------------------------|| Reboot to load all config"
-        SHELL
-        reboot.reboot = true
+    subconfig.vm.provision "#{k8s['cluster']['master']}-initial-setup", type: "shell" do |ins|
+        ins.path = "script/bootstrap.sh"
+        ins.args   = ["#{k8s['user']}"]
     end
 
     subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
         mns.path = "script/bootstrap_master.sh"
-        mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10", "#{k8s['cluster']['master']}"]
+        mns.args   = ["#{k8s['user']}", "#{k8s['ip_part']}", "10"]
     end
 
-    subconfig.trigger.after :up do |trigger_local|
-        trigger_local.run = {inline: "/bin/bash -c 'vagrant ssh --no-tty -c \"cat /etc/kubernetes/admin.conf\" #{k8s['cluster']['master']} > admin.conf && rm -f \${HOME}/.kube/config 2>/dev/null; mkdir -p \${HOME}/.kube; cp -i admin.conf \${HOME}/.kube/config; rm -f admin.conf'"}
-    end
+    subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"
 end
