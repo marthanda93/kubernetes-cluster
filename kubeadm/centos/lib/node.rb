@@ -38,29 +38,10 @@ config.vm.define "#{k8s['cluster']['node']}-#{i}" do |subconfig|
         vb.cpus = k8s['resources']['node']['cpus']
     end
 
-    subconfig.trigger.after :up do |trigger_local|
-        trigger_local.run = {inline: "/bin/bash -c 'wpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{k8s['user']}/.ssh/id_rsa.pub\" #{k8s['cluster']['node']}-#{i}) && vagrant ssh --no-tty -c \"echo \${wpub_key} >> /home/#{k8s['user']}/.ssh/authorized_keys\" #{k8s['cluster']['master']}; mpub_key=$(vagrant ssh --no-tty -c \"cat /home/#{k8s['user']}/.ssh/id_rsa.pub\" #{k8s['cluster']['master']}) && vagrant ssh --no-tty -c \"echo \${mpub_key} >> /home/#{k8s['user']}/.ssh/authorized_keys\" #{k8s['cluster']['node']}-#{i}'"}
+    subconfig.vm.provision "#{k8s['cluster']['master']}-initial-setup", type: "shell" do |ins|
+        ins.path = "script/bootstrap.sh"
+        ins.args   = ["#{k8s['user']}"]
     end
 
-    subconfig.trigger.after :up do |trigger_remote|
-        trigger_remote.run_remote = {inline: <<-SHELL
-                kube_join=\$(echo "ssh #{k8s['user']}@#{k8s['cluster']['master']} -o StrictHostKeyChecking=no '( cat /home/#{k8s['user']}/.bash_profile | grep KUBEADM_JOIN)'" | su - #{k8s['user']})
-                kube_join=\$(echo ${kube_join} | awk -F'"' '{print \$2}')
-                echo "sudo $kube_join" | su - #{k8s['user']}
-                echo "scp -o StrictHostKeyChecking=no #{k8s['user']}@#{k8s['cluster']['master']}:/etc/kubernetes/admin.conf /home/#{k8s['user']}/" | su - #{k8s['user']}
-                echo "mkdir -p /home/#{k8s['user']}/.kube" | su - #{k8s['user']}
-                echo "cp -i /home/#{k8s['user']}/admin.conf /home/#{k8s['user']}/.kube/config" | su - #{k8s['user']}
-                echo "sudo chown #{k8s['user']}:#{k8s['user']} -R /home/#{k8s['user']}/.kube" | su - #{k8s['user']}
-                echo "kubectl label nodes #{k8s['cluster']['node']}-#{i} kubernetes.io/role=#{k8s['cluster']['node']}-#{i}" | su - #{k8s['user']}
-            SHELL
-        }
-    end
-
-    subconfig.vm.provision "Restart VM", type: "shell" do |reboot|
-        reboot.privileged = true
-        reboot.inline = <<-SHELL
-            echo "----------------------------------|| Reboot to load all config"
-        SHELL
-        reboot.reboot = true
-    end
+    subconfig.vm.provision "Reboot to load all config", type:"shell", inline: "shutdown -r now"
 end
