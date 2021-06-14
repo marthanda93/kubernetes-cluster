@@ -4,14 +4,14 @@ config.trigger.after :up do |trigger|
 
     trigger.ruby do |env,machine|
         mpub, stdeerr, status = Open3.capture3("vagrant ssh --no-tty -c 'cat /home/" + k8s['user'] + "/.ssh/id_rsa.pub' " + k8s['cluster']['master'])
-        kubeadm_join, stdeerr, status = Open3.capture3("vagrant ssh --no-tty -c \"sudo kubeadm init --apiserver-advertise-address=#{k8s['ip_part']}.10 --apiserver-cert-extra-sans=#{k8s['ip_part']}.10  --node-name master-node --pod-network-cidr=#{k8s['ip_part']}.0/16 --token-ttl 0 | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd ''\" #{k8s['cluster']['master']}")
+        kubeadm_join, stdeerr, status = Open3.capture3("vagrant ssh --no-tty -c \"sudo kubeadm init --apiserver-advertise-address=#{k8s['ip_part']}.10 --apiserver-cert-extra-sans=#{k8s['ip_part']}.10  --node-name #{k8s['cluster']['master']} --certificate-key=/opt/certificates/ca.pem --ignore-preflight-errors all --pod-network-cidr=#{k8s['ip_part']}.0/16 --token-ttl 0 | grep -A2 'kubeadm join' | xargs -L 2 | paste -sd ''\" #{k8s['cluster']['master']}")
 
         system("vagrant ssh --no-tty -c 'mkdir -p $HOME/.kube' #{k8s['cluster']['master']}")
         system("vagrant ssh --no-tty -c 'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config' #{k8s['cluster']['master']}")
         system("vagrant ssh --no-tty -c 'sudo chown $(id -u):$(id -g) $HOME/.kube/config' #{k8s['cluster']['master']}")
         system("vagrant ssh --no-tty -c 'echo \"export KUBECONFIG=/etc/kubernetes/admin.conf\" >> $HOME/.bash_profile' #{k8s['cluster']['master']}")
         system("vagrant ssh --no-tty -c 'sudo chown #{k8s['user']} /etc/kubernetes/admin.conf' #{k8s['cluster']['master']}")
-        system('vagrant ssh --no-tty -c \'echo "export KUBEADM_JOIN=\"'+ kubeadm_join.strip + '\"" >> /home/vagrant/.bash_profile\' master-node')
+        system('vagrant ssh --no-tty -c \'echo "export KUBEADM_JOIN=\"'+ kubeadm_join.strip + '\"" >> /home/vagrant/.bash_profile\' ' + k8s['cluster']['master'])
         system("vagrant ssh --no-tty -c 'kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml' #{k8s['cluster']['master']}")
 
         1.step(k8s['resources']['node']['count']) do |m|
