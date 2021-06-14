@@ -1,0 +1,37 @@
+---
+api_version: "2"
+image: "bento/ubuntu-18.04"
+ip_part: "10.240.0"
+user: "vagrant"
+
+version:
+    kubernetes_bin: "1.18.6"
+    etcd: "3.4.10"
+    containerd: "1.3.6"
+    CNI_plugins: "0.8.6"
+    runc: "1.0.0-rc91"
+    cri-tools: "1.18.0"
+
+cluster:
+    master: "controller"
+    node: "worker"
+    ha: "load-balancer"
+
+resources:
+    master:
+        cpus: 1
+        memory: 1024
+        count: 3
+        ip_prefix: 10
+    node:
+        cpus: 2
+        memory: 2048
+        count: 2
+        ip_prefix: 20
+    ha:
+        cpus: 1
+        memory: 1024
+        ip_prefix: 10
+
+net:
+    network_type: private_network

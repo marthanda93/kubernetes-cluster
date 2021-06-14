@@ -1,0 +1,48 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+require 'open3'
+
+k8s = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yaml'))
+ENV["LC_ALL"] = "en_US.UTF-8"
+
+msg = <<MSG
+------------------------------------------------------
+Kubernetes up and running ✌	☺ ✌ 
+
+URLS:
+ - Kubernetes control plane is running at https://192.160.0.10:6443
+ - CoreDNS is running at https://192.160.0.10:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+------------------------------------------------------
+MSG
+
+Vagrant.configure(k8s['api_version']) do |config|
+	config.vm.boot_timeout = 600
+	# config.ssh.keep_alive = true
+	
+	# Load Balancer vm
+	if File.exist?('lib/ha.rb')
+		eval(IO.read('lib/ha.rb'), binding)
+	end
+
+	# Kubernetes Controller cluster
+	(1..k8s['resources']['master']['count']).each do |i|
+		if File.exist?('lib/master.rb')
+			eval(IO.read('lib/master.rb'), binding)
+		end
+	end
+
+	# Kubernetes Worker cluster
+	(1..k8s['resources']['node']['count']).each do |i|
+		if File.exist?('lib/node.rb')
+			eval(IO.read('lib/node.rb'), binding)
+		end
+	end
+
+	# Exchange ssh keys to access each other, expect HA can access each of vm but not other vm cannot to access HA directly.
+    if File.exist?('lib/trigger.rb')
+        eval(IO.read('lib/trigger.rb'), binding)
+    end
+end
