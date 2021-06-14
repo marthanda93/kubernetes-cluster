@@ -1,10 +1,19 @@
 config.vm.define "#{k8s['cluster']['master']}" do |subconfig|
-    subconfig.vm.post_up_message = $msg
     subconfig.vm.box = k8s['image']
     subconfig.vm.box_check_update = false
 
     subconfig.vm.hostname = "#{k8s['cluster']['master']}"
     subconfig.vm.network :private_network, ip: "#{k8s['ip_part']}.10"
+
+    subconfig.vm.provider "virtualbox" do |vb|
+        vb.memory = k8s['resources']['master']['memory']
+        vb.cpus = k8s['resources']['master']['cpus']
+    end
+
+    subconfig.vm.provision "#{k8s['cluster']['master']}-initial-setup", type: "shell" do |ins|
+        ins.path = "script/bootstrap.sh"
+        ins.args   = ["#{k8s['user']}"]
+    end
 
     # Hostfile :: Master node
     subconfig.vm.provision "master-hostfile", type: "shell" do |mhf|
@@ -21,16 +30,6 @@ config.vm.define "#{k8s['cluster']['master']}" do |subconfig|
             done
         SHELL
         whu.args   = ["#{k8s['user']}", "#{k8s['resources']['node']['count']}", "#{k8s['ip_part']}"]
-    end
-
-    subconfig.vm.provider "virtualbox" do |vb|
-        vb.memory = k8s['resources']['master']['memory']
-        vb.cpus = k8s['resources']['master']['cpus']
-    end
-
-    subconfig.vm.provision "#{k8s['cluster']['master']}-initial-setup", type: "shell" do |ins|
-        ins.path = "script/bootstrap.sh"
-        ins.args   = ["#{k8s['user']}"]
     end
 
     subconfig.vm.provision "#{k8s['cluster']['master']}-setup", type: "shell" do |mns|
